@@ -275,7 +275,7 @@ public class Operations : MonoBehaviour {
 		
 			if (hand.IsValid) {
 				//if(frame != null){
-				//print ("right");
+				
 
 
 				for (int g = 0; g < frame.Gestures().Count; g++) {
