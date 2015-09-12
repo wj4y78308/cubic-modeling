@@ -13,6 +13,7 @@ namespace Hover.Demo.CastCubes.Items {
 		protected HovercastItemVisualSettings ItemSett { get; private set; }
 		protected InteractionSettings InteractSett { get; private set; }
 		protected Menu menu;
+		protected Operations operations;
 
 		protected override void Setup() {		
 			CastSetup = GameObject.Find("Cast").GetComponent<HovercastSetup>();
