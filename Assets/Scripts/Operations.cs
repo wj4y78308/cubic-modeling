@@ -8,6 +8,7 @@ using System.IO;
 using Leap;
 using Hover.Cast.State;
 using Hover.Cast;
+using Hover.Demo.CastCubes.Items;
 
 public class Operations : MonoBehaviour {
 
@@ -23,11 +24,14 @@ public class Operations : MonoBehaviour {
 
 	HovercastSetup menuState;
 
+	public GameObject attach;
+	
 	float GrabStrength = 0.0f;
 	Vector handSpeed;
 	Vector swipeDirection;
 	Vector screenTapDirection;
 	bool isTouchedScreen = false;
+
 
 	public int opMode = 0;
 	public UnityEngine.UI.Image paper;
@@ -324,8 +328,8 @@ public class Operations : MonoBehaviour {
 					Move ();			
 					UpdateGrid ();
 				}
-			//Draw cubeObject
-			else {
+				//Draw cubeObject
+				else {
 					Vector currentPosition = pointable.TipPosition;
 					//if( touchZone == Pointable.Zone.ZONE_TOUCHING && handsInFrame.Leftmost.GrabStrength == 1){
 					//print(currentPosition);
@@ -335,15 +339,14 @@ public class Operations : MonoBehaviour {
 						if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3")) != null) {
 							//if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").gameObject) != null){					
 							Vector3 point = finger.transform.position;
-							//print (point);
+							
 							//point = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").position;
 							//if(cubeArray != null)
 							//print (cubeArray.Length);
 							if (opMode <= 1 && cubeArray == null) {
-								//print ("draw");
 								AddPointLeap ();
-								if (menu.mainMenu.activeSelf)
-									menu.ShowMainMenu (false);
+								//if (menu.mainMenu.activeSelf)
+								//	menu.ShowMainMenu (false);
 							}
 						//else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(point.x, point.y, 0)),out hit)) {
 						else if (Physics.Raycast (point + cam.transform.forward, (point - cam.transform.position).normalized, out hit)) {
@@ -367,26 +370,31 @@ public class Operations : MonoBehaviour {
 					}
 
 				//else if( touchZone == Pointable.Zone.ZONE_HOVERING && isTouchedScreen == true && handsInFrame.Leftmost.GrabStrength <= 0.5){ // touching to hovering
-				else if (currentPosition.z - cam.transform.position.z > -15 && isTouchedScreen == true) { // touching to hovering
-						isTouchedScreen = false;
+					else if (currentPosition.z - cam.transform.position.z > -15 && isTouchedScreen == true) { // touching to hovering
+							isTouchedScreen = false;
 
 
-						if (clickedMenu) {
-							clickedMenu = false;
-							return;
+							if (clickedMenu) {
+								clickedMenu = false;
+								return;
+							}
+							pushed = false;
+							if (isLoading)
+								return;
+							if (opMode < 2) {
+								EndPoint ();
+								
+								//menu.ShowMainMenu (true);
+							} else if (opMode == 2)
+								newlyAttached = new List<Vector3> ();	
+								if (attach.GetComponent<OperationsListener> ().enabled == false)
+									attach.GetComponent<OperationsListener> ().enabled = true;
+						}	
+
+						if( menu.sliderPanel.gameObject.activeSelf){
+							GrabChangeThickness();
 						}
-						pushed = false;
-						if (isLoading)
-							return;
-						if (opMode < 2) {
-							EndPoint ();
-							menu.ShowMainMenu (true);
-						} else if (opMode == 2)
-							newlyAttached = new List<Vector3> ();	
-						if (GetComponent<GUI_Button> ().enabled == false)
-							GetComponent<GUI_Button> ().enabled = true;
-					}	
-				}
+					}
 				}
 			}
 		}
@@ -401,6 +409,22 @@ public class Operations : MonoBehaviour {
 		}
 	}
 
+	void GrabChangeThickness(){
+		GrabStrength = hand.GrabStrength;
+
+		if (GrabStrength == 1 && hand.IsRight) {
+			Frame pre = controller.Frame (1);
+			Hand preHand = pre.Pointables.Frontmost.Hand;
+			if((hand.PalmPosition.y - preHand.PalmPosition.y) > 6.0f){
+				menu.slider.value += 1;
+				ChangeThickness();
+			}
+			else if((hand.PalmPosition.y - preHand.PalmPosition.y) <= -6.0f){
+				menu.slider.value -= 1;
+				ChangeThickness();
+			}
+		}
+	}
 
 	public void AddPoint () {
 
@@ -409,15 +433,13 @@ public class Operations : MonoBehaviour {
 		lineRenderer.SetPosition(pointArray.Count-1, cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x,Input.mousePosition.y,1.0f))); 
 	}
 	public void AddPointLeap () {
-		if (GetComponent<GUI_Button>().enabled == true)
-			GetComponent<GUI_Button>().enabled = false;
+		if (attach.GetComponent<OperationsListener>().enabled == true)
+			attach.GetComponent<OperationsListener>().enabled = false;
 
 		GameObject finger;
 		if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3")) != null){
 			
 			Vector3 point = Camera.main.WorldToScreenPoint(finger.transform.position);
-			//print("find");
-
 			//if (point != null) {
 			pointArray.Add (new Vector2 ((int)point.x, (int)point.y));
 			lineRenderer.SetVertexCount (pointArray.Count);

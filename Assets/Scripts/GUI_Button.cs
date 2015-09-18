@@ -107,7 +107,7 @@ public class GUI_Button : MonoBehaviour {
 
 				break;
 			case Pointable.Zone.ZONE_TOUCHING: // Touching
-
+				/*
 				for( int i = 0 ; i < 6 ; i++){ //operation
 					if (inActiveZoneFinger (menu.opButtons[i])) {	
 						if( menu.sliderPanel.gameObject.activeSelf){
@@ -194,7 +194,7 @@ public class GUI_Button : MonoBehaviour {
 						operations.SetThickness();
 						print ("yes");
 					}
-				}
+				}*/
 				break;
 			}
 		}

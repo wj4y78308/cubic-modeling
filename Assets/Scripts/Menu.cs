@@ -14,6 +14,8 @@ public class Menu : MonoBehaviour {
 	public Button cleanButton;
 	public Button yesButton;
 
+	public Button operButton;
+
 	//public GameObject opPanel;
 	//public GameObject leftPanel;
 
@@ -85,7 +87,7 @@ public class Menu : MonoBehaviour {
 	}
 */
 	public void ChangeOpMode (int mode){
-		for (int i=0; i<6; i++) {
+		/*for (int i=0; i<6; i++) {
 			if( i==mode ){
 				opButtons[i].image.color = Color.white;
 				opButtons[i].GetComponentInChildren<Text>().color = Color.black;
@@ -94,10 +96,23 @@ public class Menu : MonoBehaviour {
 				opButtons[i].image.color = Color.black;
 				opButtons[i].GetComponentInChildren<Text>().color = Color.white;
 			}
-		}
+		}*/
 		if(mode==0) operations.lineRenderer.material.color = Color.black;
 		else if(mode==1) operations.lineRenderer.material.color = Color.blue;
 		operations.opMode = mode;
+
+		if (operations.opMode == 0)
+			operButton.GetComponentInChildren<Text>().text = "Draw Simple";
+		else if(operations.opMode == 1)
+			operButton.GetComponentInChildren<Text>().text = "Draw Symmetry";
+		else if(operations.opMode == 2)
+			operButton.GetComponentInChildren<Text>().text = "Attach";
+		else if(operations.opMode == 3)
+			operButton.GetComponentInChildren<Text>().text = "Remove";
+		else if(operations.opMode == 4)
+			operButton.GetComponentInChildren<Text>().text = "Move";
+		else if(operations.opMode == 5)
+			operButton.GetComponentInChildren<Text>().text = "Paint";	
 	}
 
 	public void ShowMainMenu (bool show) {
@@ -241,6 +256,7 @@ public class Menu : MonoBehaviour {
 
 	void ChangeColor (Color color){
 		pickedColor = color;
+		//pickedColorImage.color = pickedColor;
 		pickedColorTex.SetPixel(0, 0, pickedColor);
 		pickedColorTex.Apply();
 		operations.startCube.GetComponent<Renderer>().material.color = pickedColor;
@@ -279,8 +295,10 @@ public class Menu : MonoBehaviour {
 				styleArray[i,j].normal.background = texture;
 			}
 		}
-		pickedColorRect = new Rect(0.5f*(Screen.width - hueColorNum * sizeOfView - (hueColorNum - 1) * borderSize) + hueColorNum * sizeOfView + (hueColorNum-1) * borderSize,
-		                     Screen.height - sizeOfView * 2, sizeOfView * 2, sizeOfView * 2);
+		//pickedColorRect = new Rect(0.5f*(Screen.width - hueColorNum * sizeOfView - (hueColorNum - 1) * borderSize) + hueColorNum * sizeOfView + (hueColorNum-1) * borderSize,
+		  //                   Screen.height - sizeOfView * 2, sizeOfView * 2, sizeOfView * 2);
+		RectTransform rectButton = operButton.GetComponent<RectTransform> (); 
+		pickedColorRect = new Rect(operButton.transform.position.x /*- rectButton.rect.width/2*/ +sizeOfView * 2 ,Screen.height - operButton.transform.position.y + rectButton.rect.height, sizeOfView * 2, sizeOfView * 2);
 		pickedColorTex = new Texture2D(1, 1);
 		ChangeColor (Color.red);
 	}

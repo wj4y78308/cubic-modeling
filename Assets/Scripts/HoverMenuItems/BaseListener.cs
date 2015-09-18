@@ -20,6 +20,8 @@ namespace Hover.Demo.CastCubes.Items {
 			ItemSett = CastSetup.DefaultItemVisualSettings;
 			InteractSett = CastSetup.InteractionSettings.GetSettings();
 			menu = GameObject.Find("Scripts").GetComponent<Menu> ();
+			operations = GameObject.Find("Scripts").GetComponent<Operations> ();
+			menu.HideSlider ();
 		}
 	}
 }

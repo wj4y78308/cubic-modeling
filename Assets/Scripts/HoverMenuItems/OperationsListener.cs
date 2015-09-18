@@ -7,7 +7,7 @@ using Hover.Common.Items.Types;
 
 namespace Hover.Demo.CastCubes.Items {
 
-	public class OperationsDrawSimpleListener : BaseListener<IRadioItem> {
+	public class OperationsListener : BaseListener<IRadioItem> {
 		
 		//public HovercastItem HueSlider;
 
@@ -21,10 +21,10 @@ namespace Hover.Demo.CastCubes.Items {
 		}
 
 		private void HandleValueChanged(ISelectableItem<bool> pItem) {
+
 			if ( !pItem.Value ) {
 				return;
 			}
-
 			if (this.gameObject.name == "Draw Simple")
 				menu.ChangeOpMode (0);
 			else if (this.gameObject.name == "Draw Symmetry")
@@ -36,6 +36,9 @@ namespace Hover.Demo.CastCubes.Items {
 			else if (this.gameObject.name == "Paint")
 				menu.ChangeOpMode (4);
 
+			if( menu.sliderPanel.gameObject.activeSelf){
+				operations.SetThickness();
+			}
 			//ISliderItem hue = (ISliderItem)HueSlider.GetItem();
 		}		
 	}	
