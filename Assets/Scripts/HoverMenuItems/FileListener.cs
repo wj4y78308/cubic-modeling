@@ -25,7 +25,11 @@ namespace Hover.Demo.CastCubes.Items {
 				menu.ShowLoadMenu (true);
 			else if (this.gameObject.name == "Save")
 				menu.ShowSaveDialog(true);
-		
-		}
+            if (menu.sliderPanel.gameObject.activeSelf)
+            {
+                operations.SetThickness();
+            }
+
+        }
 	}
 }

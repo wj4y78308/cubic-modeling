@@ -27,6 +27,10 @@ namespace Hover.Demo.CastCubes.Items {
 				operations.Redo();
 			else if (this.gameObject.name == "Clean")
 				operations.Clean();
-		}		
+            if (menu.sliderPanel.gameObject.activeSelf)
+            {
+                operations.SetThickness();
+            }
+        }		
 	}
 }
