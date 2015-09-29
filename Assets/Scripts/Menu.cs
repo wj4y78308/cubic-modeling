@@ -15,11 +15,12 @@ public class Menu : MonoBehaviour {
 	public Button yesButton;
 
 	public Button operButton;
+    private Vector3 HSV = new Vector3(0.0f,1.0f,1.0f);
 
-	//public GameObject opPanel;
-	//public GameObject leftPanel;
+    //public GameObject opPanel;
+    //public GameObject leftPanel;
 
-	public Slider slider;
+    public Slider slider;
 	public Text sliderText;
 	public GameObject sliderPanel;
 	public Image colorPicker;
@@ -38,7 +39,7 @@ public class Menu : MonoBehaviour {
 	public Text modelName;
 
 	Operations operations;
-	Color pickedColor;
+	Color pickedColor = new Color (1.0f ,0.0f ,0.0f);
 	int hueColorNum = 20;
 	int brightnessNum = 4;
 	int sizeOfView = (int)Screen.height/32;
@@ -55,6 +56,7 @@ public class Menu : MonoBehaviour {
 	void Start () {
 		operations = GetComponent<Operations> ();
 		SetUpColorArray ();
+        
 	}
 	
 	// Update is called once per frame
@@ -254,7 +256,7 @@ public class Menu : MonoBehaviour {
 		return currLoadScreen;
 	}
 
-	void ChangeColor (Color color){
+	public void ChangeColor (Color color){
 		pickedColor = color;
 		//pickedColorImage.color = pickedColor;
 		pickedColorTex.SetPixel(0, 0, pickedColor);
@@ -262,7 +264,7 @@ public class Menu : MonoBehaviour {
 		operations.startCube.GetComponent<Renderer>().material.color = pickedColor;
 	}
 
-	void SetUpColorArray (){
+	public void SetUpColorArray (){
 		Color color = new Color();
 		for(int i = 0; i < hueColorNum; ++i) {
 			for(int j = 0; j < brightnessNum; ++j) {
@@ -302,4 +304,12 @@ public class Menu : MonoBehaviour {
 		pickedColorTex = new Texture2D(1, 1);
 		ChangeColor (Color.red);
 	}
+
+    public Vector3 getHSV()
+    {
+        return HSV;
+    }
+    public void setHSV(Vector3 hsv) {
+        HSV = hsv;
+    }
 }

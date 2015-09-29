@@ -14,6 +14,7 @@ namespace Hover.Demo.CastCubes.Items {
 		protected InteractionSettings InteractSett { get; private set; }
 		protected Menu menu;
 		protected Operations operations;
+       
 
 		protected override void Setup() {		
 			CastSetup = GameObject.Find("Cast").GetComponent<HovercastSetup>();
@@ -22,6 +23,10 @@ namespace Hover.Demo.CastCubes.Items {
 			menu = GameObject.Find("Scripts").GetComponent<Menu> ();
 			operations = GameObject.Find("Scripts").GetComponent<Operations> ();
 			menu.HideSlider ();
-		}
+            
+
+        }
+      
+
 	}
 }

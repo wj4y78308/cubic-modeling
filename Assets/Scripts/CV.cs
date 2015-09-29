@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 public class CV {
 
@@ -81,7 +82,12 @@ public class CV {
 		}
 	}
 
-	static void FillEdgeCollection( Texture2D img, List<PolyEdge> edges, Color color )
+    /*internal static Color HSVToColor(float rangeValue, object y, object )
+    {
+        throw new NotImplementedException();
+    }*/
+
+    static void FillEdgeCollection( Texture2D img, List<PolyEdge> edges, Color color )
 	{
 		PolyEdge tmp = new PolyEdge();
 		int i, y, total = edges.Count;
@@ -341,8 +347,9 @@ public class CV {
 			return Color.black;
 		else
 		{
-			Color col = Color.black;
-			float Hval = H * 6f;
+			//Color col = Color.black;
+            Color col = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+			float Hval = H * 6.0f;
 			int sel = Mathf.FloorToInt(Hval);
 			float mod = Hval - sel;
 			float v1 = V * (1f - S);
@@ -391,10 +398,35 @@ public class CV {
 				col.b = v1;
 				break;
 			}
-			col.r = Mathf.Clamp(col.r, 0f, 1f);
+            
+            col.r = Mathf.Clamp(col.r, 0f, 1f);
 			col.g = Mathf.Clamp(col.g, 0f, 1f);
 			col.b = Mathf.Clamp(col.b, 0f, 1f);
+            
 			return col;
 		}
 	}
+    /*public static Color HSVToColor(float pHue, float pSat, float pVal)
+    {
+        float hue60 = pHue / 60f;
+        int i = (int)Mathf.Floor(hue60) % 6;
+        float f = hue60 - (int)Mathf.Floor(hue60);
+
+        float v = pVal;
+        float p = pVal * (1 - pSat);
+        float q = pVal * (1 - f * pSat);
+        float t = pVal * (1 - (1 - f) * pSat);
+
+        switch (i)
+        {
+            case 0: return new Color(v, t, p);
+            case 1: return new Color(q, v, p);
+            case 2: return new Color(p, v, t);
+            case 3: return new Color(p, q, v);
+            case 4: return new Color(t, p, v);
+            case 5: return new Color(v, p, q);
+        }
+
+        return Color.black;
+    }*/
 }
