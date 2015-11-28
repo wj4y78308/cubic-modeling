@@ -123,7 +123,8 @@ public class Menu : MonoBehaviour {
 			showColorRects = false;
 		}
 		else {
-			mainMenu.gameObject.SetActive(true);
+            operButton.gameObject.SetActive(true);
+            mainMenu.gameObject.SetActive(true);
 			if(!colorPicker.gameObject.activeSelf){
 				showColorRects = true;
 			}
@@ -131,7 +132,9 @@ public class Menu : MonoBehaviour {
 	}
 
 	public void ShowLoadMenu (bool show) {
+        
 		if (show) {
+            operButton.gameObject.SetActive(false);
 			if (operations.saveList.Count == 0) return;
 			ShowMainMenu (false);
 			operations.startCube.SetActive(false);
@@ -145,7 +148,8 @@ public class Menu : MonoBehaviour {
 			operations.isLoading = true;
 		}
 		else {
-			ShowMainMenu (true);
+            
+            ShowMainMenu (true);
 			foreach (CubeMesh cm in FindObjectsOfType<CubeMesh> ())
 				Destroy(cm.gameObject);
 			foreach (GameObject co in operations.cubeObjects)
@@ -262,6 +266,7 @@ public class Menu : MonoBehaviour {
 		pickedColorTex.SetPixel(0, 0, pickedColor);
 		pickedColorTex.Apply();
 		operations.startCube.GetComponent<Renderer>().material.color = pickedColor;
+		operations.attachCube.GetComponent<Renderer> ().material.color = pickedColor;
 	}
 
 	public void SetUpColorArray (){

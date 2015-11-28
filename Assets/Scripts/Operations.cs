@@ -6,7 +6,8 @@ using UnityEngine.EventSystems;
 using System.Runtime.Serialization.Formatters.Binary; 
 using System.IO;
 using Leap;
-using Hover.Cast.State;
+//using Hover.Cast.State;
+using Hover.Cast.Items;
 using Hover.Cast;
 using Hover.Demo.CastCubes.Items;
 
@@ -21,19 +22,28 @@ public class Operations : MonoBehaviour {
 	public HandList handsInFrame;
 	SwipeGesture swipeGesture;
 	ScreenTapGesture screenTapGesture;
-
-	HovercastSetup menuState;
+    Vector currentPosition;
+    
+    HovercastSetup menuState;
 
 	public GameObject attach;
-	
+    public GameObject mainCast , loadCast;
+	public GameObject attachCube;
+
 	float GrabStrength = 0.0f;
 	Vector handSpeed;
 	Vector swipeDirection;
 	Vector screenTapDirection;
-	bool isTouchedScreen = false;
+    bool isTouchedScreen = false;
+    float isMoveScreen = 1.5f , isSetThickness = 1.5f ;
+    GameObject menuActive;
 
+    GameObject thumb1;
+    GameObject thumb2;
+    GameObject thumb3;
+    public GameObject handController;
 
-	public int opMode = 0;
+    public int opMode = 0;
 	public UnityEngine.UI.Image paper;
 	public Camera cam;
 	public GameObject cubeObject;
@@ -71,31 +81,27 @@ public class Operations : MonoBehaviour {
 		menu = GetComponent<Menu> ();
 		lineRenderer = GetComponent<LineRenderer> ();
 		menuState = GameObject.Find("Cast").GetComponent<HovercastSetup> ();
-
-		SetUpTexture ();
+        
+        SetUpTexture ();
 		Load ();
-
-		controller = new Controller();
+        
+        menu.ShowLoadMenu(false);
+        menu.ShowSaveDialog(false);
+        controller = new Controller();
 		
-		controller.EnableGesture(Gesture.GestureType.TYPE_CIRCLE);
-		controller.EnableGesture(Gesture.GestureType.TYPE_KEY_TAP);
-		controller.EnableGesture(Gesture.GestureType.TYPE_SCREEN_TAP);
 		controller.EnableGesture(Gesture.GestureType.TYPE_SWIPE);
-		
-
-		controller.Config.SetFloat("Gesture.ScreenTap.MinForwardVelocity", 0.1f);
-		controller.Config.SetFloat("Gesture.ScreenTap.HistorySeconds", 1.0f);
-		controller.Config.SetFloat("Gesture.ScreenTap.MinDistance", 0.1f);
-		controller.Config.Save();
 		
 		controller.Config.SetFloat("Gesture.Swipe.MinLength", 120.0f);
 		controller.Config.SetFloat("Gesture.Swipe.MinVelocity", 650.0f);
 		controller.Config.SetFloat("Gesture.Swipe.HistorySeconds", 10.0f);
 		controller.Config.Save();
-	}
+        
+    }
 	
 	// Update is called once per frame
 	void Update () {
+
+        
 		int touchCount = Input.touchCount;
 		if(touchCount <= 1){
 
@@ -111,7 +117,7 @@ public class Operations : MonoBehaviour {
 					if (opMode<=1 && cubeArray==null) {
 						AddPoint ();
 						if(menu.mainMenu.activeSelf) menu.ShowMainMenu(false);
-
+                        
 					}
 					else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(curr.x, curr.y, 0)),out hit)) {
 						if (opMode ==2 || opMode == 3 || opMode == 5) {
@@ -262,6 +268,7 @@ public class Operations : MonoBehaviour {
 			}
 		}
 	
+        ////////////////////////////////////////////////////////////////////////////
 
 		frame = controller.Frame();
 		handsInFrame = frame.Hands;
@@ -269,161 +276,282 @@ public class Operations : MonoBehaviour {
 		touchZone = pointable.TouchZone;
 		hand = pointable.Hand;
 
+        if (menu.operButton.gameObject.activeSelf)
+        {
+            mainCast.SetActive(true);
+            loadCast.SetActive(false);
+           
 
-		if (menuState.State == null)
-			print ("null");
-		else {
-			GameObject menuActive = GameObject.Find ("Main Camera/HandController/Cast/Menu/Arc/CurrLevel");
-			if (!menuActive.activeSelf){
-				//print ("active");
-		
-			if (hand.IsValid) {
-				//if(frame != null){
-				
+            if (menuState.State == null) print("null");
+            else
+            {
+               
+                menuActive = GameObject.Find("Main Camera/Cast/Menu/Arc/CurrLevel");
 
+                if (!menuActive.activeSelf)
+                {                
 
-				for (int g = 0; g < frame.Gestures().Count; g++) {
-					if (frame.Gestures () [g].Type == Gesture.GestureType.TYPE_SWIPE) {	
-						//switch (frame.Gestures()[g].Type) {
-								
-						//case Gesture.GestureType.TYPE_SWIPE:
-						//Handle swipe gestures
-					
-						swipeGesture = new SwipeGesture (frame.Gestures () [g]);
-						swipeDirection = swipeGesture.Direction;
-					
-						if (hand.IsRight) {
-							if (Mathf.Abs (swipeDirection.x) > Mathf.Abs (swipeDirection.y)) {
-							
-								if (swipeDirection.x > 0) {
-									cam.transform.RotateAround (cubeObject.transform.position, cam.transform.up, 1.5f * swipeDirection.x);
-								} else if (swipeDirection.x < 0) {
-									cam.transform.RotateAround (cubeObject.transform.position, cam.transform.up, swipeDirection.x);
-								}
-							} else {
-								cam.transform.RotateAround (cubeObject.transform.position, cam.transform.right, pointable.Direction.y);
-							}
-						}
-					
-						//break;
-						//default:
-						//Handle unrecognized gestures
+                    if (hand.IsValid)
+                    {
+                        //if(frame != null){
 
-						//break;
-					}
-				}
+                        for (int g = 0; g < frame.Gestures().Count; g++)
+                        {
+                            if (frame.Gestures()[g].Type == Gesture.GestureType.TYPE_SWIPE)
+                            {
+                                swipeGesture = new SwipeGesture(frame.Gestures()[g]);
+                                swipeDirection = swipeGesture.Direction;
+                                int dir = Swipe();
 
-			
-				GrabStrength = hand.GrabStrength;
+                                if (dir == 1)
+                                {
+                                    cam.transform.RotateAround(cubeObject.transform.position, cam.transform.up, 1.5f * swipeDirection.x);
+                                }
+                                else if (dir == 2)
+                                {
+                                    cam.transform.RotateAround(cubeObject.transform.position, cam.transform.up, swipeDirection.x);
+                                }
+
+                                else if (dir == 3 || dir == 4)
+                                {
+                                    cam.transform.RotateAround(cubeObject.transform.position, -cam.transform.right, swipeDirection.x);
+                                }
+                            }
+                        }
 
 
+                        //GrabStrength = hand.GrabStrength;
 
-				// Move cubeObject
-				if (opMode == 4) {
-					if (!pushed) {
-						PushTo (undoStack);
-						redoStack.Clear ();
-						pushed = true;
-					}
-					Move ();			
-					UpdateGrid ();
-				}
-				//Draw cubeObject
-				else {
-					Vector currentPosition = pointable.TipPosition;
-					//if( touchZone == Pointable.Zone.ZONE_TOUCHING && handsInFrame.Leftmost.GrabStrength == 1){
-					//print(currentPosition);
-					if (currentPosition.z - cam.transform.position.z <= -15) {
-						RaycastHit hit = new RaycastHit ();
-						GameObject finger;
-						if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3")) != null) {
-							//if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").gameObject) != null){					
-							Vector3 point = finger.transform.position;
-							
-							//point = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").position;
-							//if(cubeArray != null)
-							//print (cubeArray.Length);
-							if (opMode <= 1 && cubeArray == null) {
-								AddPointLeap ();
-								//if (menu.mainMenu.activeSelf)
-								//	menu.ShowMainMenu (false);
-							}
-						//else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(point.x, point.y, 0)),out hit)) {
-						else if (Physics.Raycast (point + cam.transform.forward, (point - cam.transform.position).normalized, out hit)) {
+                        // Move cubeObject
+                        if (opMode == 4)
+                        {
+                            if (!pushed)
+                            {
+                                PushTo(undoStack);
+                                redoStack.Clear();
+                                pushed = true;
+                            }
+                            Move();
+                            UpdateGrid();
+                        }
+                        //Draw cubeObject
+                        else
+                        {
+                            currentPosition = pointable.TipPosition;
+                            //if( touchZone == Pointable.Zone.ZONE_TOUCHING && handsInFrame.Leftmost.GrabStrength == 1){
+                            //print(currentPosition);
+                            if (currentPosition.z - cam.transform.position.z <= -15)
+                            {
+                                RaycastHit hit = new RaycastHit();
+                                GameObject finger;
+                                if ((finger = GameObject.Find("SkeletalRightRobotHand(Clone)/index/bone3")) != null)
+                                {
+                                    //if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").gameObject) != null){					
+                                    Vector3 point = finger.transform.position;
 
-								if (opMode == 2 || opMode == 3 || opMode == 5) {
-									if (!pushed) {
-										PushTo (undoStack);
-										redoStack.Clear ();
-										pushed = true;
-									}
-								}
-								if (opMode == 2)
-									Attach (hit);
-								else if (opMode == 3)
-									Remove (hit);
-								else if (opMode == 5)
-									Paint (hit);
-							}
-						}
-						isTouchedScreen = true;
-					}
+                                    //point = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").position;
+                                    //if(cubeArray != null)
+                                    //print (cubeArray.Length);
+                                    if (opMode <= 1 && cubeArray == null)
+                                    {
+                                        AddPointLeap();
+                                        //if (menu.mainMenu.activeSelf)
+                                        //	menu.ShowMainMenu (false);
+                                    }
+                                    //else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(point.x, point.y, 0)),out hit)) {
+                                    else if (Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit))
+                                    {
 
-				//else if( touchZone == Pointable.Zone.ZONE_HOVERING && isTouchedScreen == true && handsInFrame.Leftmost.GrabStrength <= 0.5){ // touching to hovering
-					else if (currentPosition.z - cam.transform.position.z > -15 && isTouchedScreen == true) { // touching to hovering
-							isTouchedScreen = false;
+                                        if (opMode == 2 || opMode == 3 || opMode == 5)
+                                        {
+                                            if (!pushed)
+                                            {
+                                                PushTo(undoStack);
+                                                redoStack.Clear();
+                                                pushed = true;
+                                            }
+                                        }
+										if (opMode == 2 && !CubeCreater.isPinching)
+                                            Attach(hit);
+                                        else if (opMode == 3)
+                                            Remove(hit);
+                                        else if (opMode == 5)
+                                            Paint(hit);
+                                    }
+                                }
+                                isTouchedScreen = true;
+                            }
+
+                            //else if( touchZone == Pointable.Zone.ZONE_HOVERING && isTouchedScreen == true && handsInFrame.Leftmost.GrabStrength <= 0.5){ // touching to hovering
+                            else if (currentPosition.z - cam.transform.position.z > -15 && isTouchedScreen == true)
+                            { // touching to hovering
+                                isTouchedScreen = false;
 
 
-							if (clickedMenu) {
-								clickedMenu = false;
-								return;
-							}
-							pushed = false;
-							if (isLoading)
-								return;
-							if (opMode < 2) {
-								EndPoint ();
-								
-								//menu.ShowMainMenu (true);
-							} else if (opMode == 2)
-								newlyAttached = new List<Vector3> ();	
-								if (attach.GetComponent<OperationsListener> ().enabled == false)
-									attach.GetComponent<OperationsListener> ().enabled = true;
-						}	
+                                if (clickedMenu)
+                                {
+                                    clickedMenu = false;
+                                    return;
+                                }
+                                pushed = false;
+                                if (isLoading)
+                                    return;
+                                if (opMode < 2)
+                                {
+                                    EndPoint();
 
-						if( menu.sliderPanel.gameObject.activeSelf){
-							GrabChangeThickness();
-						}
-					}
-				}
-			}
-		}
+                                    //menu.ShowMainMenu (true);
+                                }
+                                else if (opMode == 2)
+                                    newlyAttached = new List<Vector3>();
+                                if (attach.GetComponent<OperationsListener>().enabled == false)
+                                    attach.GetComponent<OperationsListener>().enabled = true;
+                            }
+
+                            if (menu.sliderPanel.gameObject.activeSelf)
+                            {
+                            	//print(isSetThickness);
+                                ThumbDown();
+
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        else //load menu
+        {
+
+            mainCast.SetActive(false);
+            loadCast.SetActive(true);
+
+
+            if (hand.IsRight)
+            {
+                FingerList indexList = hand.Fingers.FingerType(Finger.FingerType.TYPE_INDEX);
+                Finger index = indexList[0];
+                FingerList middleList = hand.Fingers.FingerType(Finger.FingerType.TYPE_MIDDLE);
+                Finger middle = middleList[0];
+
+                if ((index.Direction.x >= 0.4f && middle.Direction.x >= 0.4f) || (index.Direction.x <= -0.4f && middle.Direction.x <= -0.4f)) // 食指中指方向
+                    isMoveScreen -= Time.deltaTime * Mathf.Abs(index.Direction.x * 1.8f) * 3.0f;
+
+                if (isMoveScreen <= 0)
+                {
+                    isMoveScreen = 1.5f;
+                    if (index.Direction.x <= -0.4f && middle.Direction.x <= -0.4f) menu.SwitchLoadScreen(-1); //left
+                    else if (index.Direction.x >= 0.4f && middle.Direction.x >= 0.4f) menu.SwitchLoadScreen(1); //right
+
+                }
+            }
+            
+            
+
+
+        }
+           
 	}
+    int Swipe() {
+        
+                if (hand.IsRight)
+                {
+                    if (Mathf.Abs(swipeDirection.x) > Mathf.Abs(swipeDirection.y))
+                    {
+                        if (swipeDirection.x > 0) return 1; // left                
+                        else if (swipeDirection.x < 0) return 2; //right
+                    }
+                    else
+                    {
+                        if (swipeDirection.y > 0) return 3; // up                
+                        else if (swipeDirection.y < 0) return 4; //down
+                    }
+                }
+     
+        return 0;
+    }
 
 	void Move(){
 		GrabStrength = hand.GrabStrength;
 		
 		if (GrabStrength == 1 && hand.IsRight) {
 			handSpeed = hand.PalmVelocity;
-			cam.transform.Translate (-handSpeed.x / 1000.0f, -handSpeed.y / 1000.0f, handSpeed.z / 1000.0f);
-		}
+            //cam.transform.Translate (-handSpeed.x / 10000.0f, -handSpeed.y / 10000.0f, handSpeed.z / 10000.0f);
+            //handController.transform.Translate(-handSpeed.x / 10000.0f, -handSpeed.y / 10000.0f, handSpeed.z / 10000.0f);
+          
+            foreach (GameObject co in cubeObjects)
+            {
+                co.transform.Translate(-handSpeed.x / 1000.0f, -handSpeed.y / 1000.0f, handSpeed.z / 1000.0f);
+            }
+                
+        }
 	}
 
-	void GrabChangeThickness(){
-		GrabStrength = hand.GrabStrength;
+    float ThumbProduct() {
+        thumb1 = GameObject.Find("SkeletalRightRobotHand(Clone)/thumb/bone1/thumb1");
+        thumb2 = GameObject.Find("SkeletalRightRobotHand(Clone)/thumb/bone2/thumb2");
+        thumb3 = GameObject.Find("SkeletalRightRobotHand(Clone)/index/bone3/thumb3");
+        if(thumb1!=null && thumb2!=null && thumb3!=null){
+        	Vector3 v1 = thumb2.transform.position - thumb1.transform.position;
+       		Vector3 v2 = thumb3.transform.position - thumb1.transform.position;
+        	return Vector3.Dot(v1, v2);
+        }
+     
+        return 0;      
+    }
 
-		if (GrabStrength == 1 && hand.IsRight) {
-			Frame pre = controller.Frame (1);
-			Hand preHand = pre.Pointables.Frontmost.Hand;
-			if((hand.PalmPosition.y - preHand.PalmPosition.y) > 6.0f){
-				menu.slider.value += 1;
-				ChangeThickness();
-			}
-			else if((hand.PalmPosition.y - preHand.PalmPosition.y) <= -6.0f){
-				menu.slider.value -= 1;
-				ChangeThickness();
-			}
-		}
+    void ThumbDown(){
+        float dotProduct = ThumbProduct();
+        
+       	if(hand.IsRight){
+	        if (dotProduct >= 0.01f /*&& !isThumbDown*/){
+	            
+	            if (hand.PalmNormal.y > -0.4f){
+	                //isThumbDown = true;
+	                isSetThickness+=Time.deltaTime*1.5f;
+	                ThumbChangeThickness();
+	            }
+	            else if (hand.PalmNormal.y < -0.7f){
+	                //isThumbDown = true;
+	                isSetThickness-=Time.deltaTime*1.5f;
+	                ThumbChangeThickness();
+	            }
+	        }
+	        /*else if (dotProduct <= 0.0065f){
+	            //isThumbDown = false;
+	        }*/
+	    }
+        //return 0;
+    }
+
+	void ThumbChangeThickness(){
+        if(isSetThickness <= 0.0f){
+        	menu.slider.value -= 1;
+            ChangeThickness();
+            isSetThickness = 1.5f;
+        }
+        else if(isSetThickness >= 3.0f){
+ 			menu.slider.value += 1;
+            ChangeThickness();
+			isSetThickness = 1.5f;
+        }
+
+       /* if (hand.IsRight){
+        	
+
+           int flag = ThumbDown();
+            if (flag == 1) //thumb up
+            {
+                menu.slider.value += 1;
+                ChangeThickness();
+            }
+            else if (flag == 2) //thumb down
+            {
+                menu.slider.value -= 1;
+                ChangeThickness();
+            }
+
+        }*/
 	}
 
 	public void AddPoint () {
@@ -433,15 +561,17 @@ public class Operations : MonoBehaviour {
 		lineRenderer.SetPosition(pointArray.Count-1, cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x,Input.mousePosition.y,1.0f))); 
 	}
 	public void AddPointLeap () {
+
 		if (attach.GetComponent<OperationsListener>().enabled == true)
 			attach.GetComponent<OperationsListener>().enabled = false;
-
-		GameObject finger;
+        
+        GameObject finger;
 		if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3")) != null){
 			
 			Vector3 point = Camera.main.WorldToScreenPoint(finger.transform.position);
 			//if (point != null) {
 			pointArray.Add (new Vector2 ((int)point.x, (int)point.y));
+		//	print (pointArray.Count);
 			lineRenderer.SetVertexCount (pointArray.Count);
 			lineRenderer.SetPosition (pointArray.Count - 1, cam.ScreenToWorldPoint (new Vector3 (point.x, point.y, 1.0f))); 
 		}
@@ -591,6 +721,7 @@ public class Operations : MonoBehaviour {
 	}
 
 	public void LoadModel () {
+        
 		PushTo (undoStack);
 		redoStack.Clear ();
 		
@@ -779,6 +910,7 @@ public class Operations : MonoBehaviour {
 
 	void SetCubeColor (GameObject c){
 		Color pickedColor = menu.GetPickedColor();
+
 		for (int i=0; i<6; i++){
 			c.transform.GetChild(i).GetComponent<Renderer>().material.color = pickedColor;
 		}
