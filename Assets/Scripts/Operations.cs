@@ -352,15 +352,19 @@ public class Operations : MonoBehaviour {
                                     //point = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").position;
                                     //if(cubeArray != null)
                                     //print (cubeArray.Length);
+
                                     if (opMode <= 1 && cubeArray == null)
                                     {
-                                        AddPointLeap();
+
+										if( Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) && hit.transform.name == "Background"){
+											//print ("hit");
+                                        	AddPointLeap();
+										}
                                         //if (menu.mainMenu.activeSelf)
                                         //	menu.ShowMainMenu (false);
                                     }
                                     //else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(point.x, point.y, 0)),out hit)) {
-                                    else if (Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit))
-                                    {
+									else if (Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) && hit.transform.name == "CubeObject(Clone)"){
 
                                         if (opMode == 2 || opMode == 3 || opMode == 5)
                                         {
@@ -399,8 +403,6 @@ public class Operations : MonoBehaviour {
                                 if (opMode < 2)
                                 {
                                     EndPoint();
-
-                                    //menu.ShowMainMenu (true);
                                 }
                                 else if (opMode == 2)
                                     newlyAttached = new List<Vector3>();
@@ -446,8 +448,6 @@ public class Operations : MonoBehaviour {
                 }
             }
             
-            
-
 
         }
            
@@ -565,13 +565,13 @@ public class Operations : MonoBehaviour {
 		if (attach.GetComponent<OperationsListener>().enabled == true)
 			attach.GetComponent<OperationsListener>().enabled = false;
         
-        GameObject finger;
-		if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3")) != null){
+		GameObject finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3");
+		if (finger != null){
 			
 			Vector3 point = Camera.main.WorldToScreenPoint(finger.transform.position);
-			//if (point != null) {
+			//print (point);
 			pointArray.Add (new Vector2 ((int)point.x, (int)point.y));
-		//	print (pointArray.Count);
+		
 			lineRenderer.SetVertexCount (pointArray.Count);
 			lineRenderer.SetPosition (pointArray.Count - 1, cam.ScreenToWorldPoint (new Vector3 (point.x, point.y, 1.0f))); 
 		}

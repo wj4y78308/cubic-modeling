@@ -75,23 +75,22 @@ public class CubeCreater : MonoBehaviour {
 				// Accelerate what we are grabbing toward the pinch.
 				if (grabbed_ != null) {
 
-
 					//Vector3 distance = pinch - grabbed_.transform.position;
 					//grabbed_.GetComponent<Rigidbody> ().AddForce (SPRING_CONSTANT * distance);
 					//grabbed_.GetComponent<Rigidbody>().AddForceAtPosition(SPRING_CONSTANT * distance,thumb.transform.position);
-					grabbedCube.transform.position = new Vector3 (thumb.transform.position.x, thumb.transform.position.y - 0.2f, thumb.transform.position.z - 1.0f);
-					//print (this.transform.localScale);
+					grabbedCube.transform.position = new Vector3 (thumb.transform.position.x, thumb.transform.position.y - 0.07f, thumb.transform.position.z);
+					//print (thumb.transform.position);
+					//print (grabbedCube.transform.position);
 				//	grabbedCube.transform.localScale = new Vector3 (0.007f, 0.007f, 0.007f);
 					//grabbed_.GetComponent<Rigidbody>().AddForceAtPosition(SPRING_CONSTANT * distance,thumb.transform.position);
-					//grabbedCube.transform.position = new Vector3 (thumb.transform.position.x, thumb.transform.position.y - 0.2f, thumb.transform.position.z - 1.0f);
-					//grabbedCube.transform.localScale = new Vector3 (0.007f, 0.007f, 0.007f);
+				
 				}
 				else {
 
 				}
 			}
-			//print (cube.transform.position.y);
-			if(cube.transform.position.y <= -8){
+
+			if(cube.transform.position.y <= -8 || cube.transform.position.z <= -20 || cube.transform.position.z >= 20 || cube.transform.position.x <= -70 ||cube.transform.position.x >= 60 ){
 				//Instantiate(cube,cubePos.transform.position,Quaternion.identity);
 				cube.SetActive(true);
 				grabbedCube.SetActive(false);
@@ -103,7 +102,7 @@ public class CubeCreater : MonoBehaviour {
 	}
 
 	void OnPinch(Vector2 pinch_position) {
-		Debug.Log("PINCH");
+		//Debug.Log("PINCH");
 		isPinching = true;
 
 		// Check if we pinched a live human.
@@ -142,7 +141,7 @@ public class CubeCreater : MonoBehaviour {
 	}
 	
 	void OnRelease() {
-		Debug.Log("RELEASE");
+		//Debug.Log("RELEASE");
 		grabbed_ = null;
 		isPinching = false;
 
@@ -151,7 +150,7 @@ public class CubeCreater : MonoBehaviour {
 		Vector3 point = operations.attachCube.transform.position;
 
 		//if(Physics.Raycast( Camera.main.ScreenPointToRay(new Vector3(point.x,point.y, 0)),out hit)){
-		if (Physics.Raycast (point + Camera.main.transform.forward, (point - Camera.main.transform.position).normalized, out hit)) {
+		if (Physics.Raycast (point + Camera.main.transform.forward, (point - Camera.main.transform.position).normalized, out hit) && hit.transform.name == "CubeObject(Clone)") {
 			//print (hit.transform.name);
 			operations.Attach (hit);
 			//Instantiate(cube,cubePos.transform.position,Quaternion.identity);
@@ -167,26 +166,12 @@ public class CubeCreater : MonoBehaviour {
 		//operations.attachCube.transform.position = cubePos;
 
 	}
-
-
+	
 	bool Collision(Vector2 pinch){ //2D screen collision
-		/*Rect barrelBox = new Rect{
-						Camera.main.WorldToScreenPoint(barrels.transform.position).x , 
-						Camera.main.WorldToScreenPoint(barrels.transform.position).y ,
-						75.0f,
-						100.0f};
-		if(x > barrelBox.x && y > barrelBox.y && x < barrelBox.x+barrelBox.width && y < barrelBox.y+barrelBox.height){
-			print ("in")
-
-		}*/
 		float minX = pinch.x - PINCH_DISTANCE/2 , minY = pinch.y - PINCH_DISTANCE/2;
 		Vector2 cubeScreenPos = Camera.main.WorldToScreenPoint(cube.transform.position);
-		//print (cubeScreenPos);print (minX);print (minY);
 		if(cubeScreenPos.x > minX && cubeScreenPos.y > minY && (cubeScreenPos.x < (minX+PINCH_DISTANCE)) && (cubeScreenPos.y < (minY+PINCH_DISTANCE)))
 			return true;
-
-
-
 		return false;
 	}
 
