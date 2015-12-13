@@ -28,7 +28,7 @@ public class Operations : MonoBehaviour {
 
 	public GameObject attach;
     public GameObject mainCast , loadCast;
-	public GameObject attachCube;
+	//public GameObject attachCube;
 
 	float GrabStrength = 0.0f;
 	Vector handSpeed;
@@ -37,6 +37,7 @@ public class Operations : MonoBehaviour {
     bool isTouchedScreen = false;
     float isMoveScreen = 1.5f , isSetThickness = 1.5f ;
     GameObject menuActive;
+	GameObject Index;
 
     GameObject thumb1;
     GameObject thumb2;
@@ -55,6 +56,7 @@ public class Operations : MonoBehaviour {
 	public List<SaveData> saveList;
 	public bool isLoading;
 	Menu menu;
+	CubeCreater cubeCreater;
 
 	float thinningScale = 0.1f;
 	float thinningProgressRatio = 1.7f;
@@ -79,6 +81,7 @@ public class Operations : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		menu = GetComponent<Menu> ();
+		cubeCreater = GameObject.Find("barrel").GetComponent<CubeCreater> ();
 		lineRenderer = GetComponent<LineRenderer> ();
 		menuState = GameObject.Find("Cast").GetComponent<HovercastSetup> ();
         
@@ -276,6 +279,8 @@ public class Operations : MonoBehaviour {
 		touchZone = pointable.TouchZone;
 		hand = pointable.Hand;
 
+		Index = GameObject.Find("CleanRobotFullRightHand(Clone)/index/bone3");
+
         if (menu.operButton.gameObject.activeSelf)
         {
             mainCast.SetActive(true);
@@ -283,8 +288,7 @@ public class Operations : MonoBehaviour {
            
 
             if (menuState.State == null) print("null");
-            else
-            {
+            else{
                
                 menuActive = GameObject.Find("Main Camera/Cast/Menu/Arc/CurrLevel");
 
@@ -305,7 +309,7 @@ public class Operations : MonoBehaviour {
 
                                 if (dir == 1)
                                 {
-                                    cam.transform.RotateAround(cubeObject.transform.position, cam.transform.up, 1.5f * swipeDirection.x);
+                                    cam.transform.RotateAround(cubeObject.transform.position, cam.transform.up, 1.5f*swipeDirection.x);
                                 }
                                 else if (dir == 2)
                                 {
@@ -318,9 +322,6 @@ public class Operations : MonoBehaviour {
                                 }
                             }
                         }
-
-
-                        //GrabStrength = hand.GrabStrength;
 
                         // Move cubeObject
                         if (opMode == 4)
@@ -343,11 +344,12 @@ public class Operations : MonoBehaviour {
                             if (currentPosition.z - cam.transform.position.z <= -15)
                             {
                                 RaycastHit hit = new RaycastHit();
-                                GameObject finger;
-                                if ((finger = GameObject.Find("SkeletalRightRobotHand(Clone)/index/bone3")) != null)
+                                
+                                //if ((index = GameObject.Find("SkeletalRightRobotHand(Clone)/index/bone3")) != null)
+								if(Index != null)
                                 {
                                     //if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").gameObject) != null){					
-                                    Vector3 point = finger.transform.position;
+									Vector3 point = Index.transform.position;
 
                                     //point = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").position;
                                     //if(cubeArray != null)
@@ -356,7 +358,8 @@ public class Operations : MonoBehaviour {
                                     if (opMode <= 1 && cubeArray == null)
                                     {
 
-										if( Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) && hit.transform.name == "Background"){
+										if( Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) &&
+											(hit.transform.name == "Background" || hit.transform.name == "CubeObject(Clone)") ){
 											//print ("hit");
                                         	AddPointLeap();
 										}
@@ -375,7 +378,7 @@ public class Operations : MonoBehaviour {
                                                 pushed = true;
                                             }
                                         }
-										if (opMode == 2 && !CubeCreater.isPinching)
+										if (opMode == 2 && !cubeCreater.isPinch())
                                             Attach(hit);
                                         else if (opMode == 3)
                                             Remove(hit);
@@ -411,10 +414,8 @@ public class Operations : MonoBehaviour {
                             }
 
                             if (menu.sliderPanel.gameObject.activeSelf)
-                            {
-                            	//print(isSetThickness);
+                            {                      
                                 ThumbDown();
-
                             }
                         }
                     }
@@ -454,7 +455,7 @@ public class Operations : MonoBehaviour {
 	}
     int Swipe() {
         
-                if (hand.IsRight)
+                if (!hand.IsRight)
                 {
                     if (Mathf.Abs(swipeDirection.x) > Mathf.Abs(swipeDirection.y))
                     {
@@ -488,9 +489,9 @@ public class Operations : MonoBehaviour {
 	}
 
     float ThumbProduct() {
-        thumb1 = GameObject.Find("SkeletalRightRobotHand(Clone)/thumb/bone1/thumb1");
-        thumb2 = GameObject.Find("SkeletalRightRobotHand(Clone)/thumb/bone2/thumb2");
-        thumb3 = GameObject.Find("SkeletalRightRobotHand(Clone)/index/bone3/thumb3");
+		thumb1 = GameObject.Find("CleanRobotFullRightHand(Clone)/thumb/joint1");
+		thumb2 = GameObject.Find("CleanRobotFullRightHand(Clone)/thumb/joint4");
+		thumb3 = GameObject.Find("CleanRobotFullRightHand(Clone)/index/joint4");
         if(thumb1!=null && thumb2!=null && thumb3!=null){
         	Vector3 v1 = thumb2.transform.position - thumb1.transform.position;
        		Vector3 v2 = thumb3.transform.position - thumb1.transform.position;
@@ -565,11 +566,9 @@ public class Operations : MonoBehaviour {
 		if (attach.GetComponent<OperationsListener>().enabled == true)
 			attach.GetComponent<OperationsListener>().enabled = false;
         
-		GameObject finger = GameObject.Find ("SkeletalRightRobotHand(Clone)/index/bone3");
-		if (finger != null){
+		if (Index != null){
 			
-			Vector3 point = Camera.main.WorldToScreenPoint(finger.transform.position);
-			//print (point);
+			Vector3 point = Camera.main.WorldToScreenPoint(Index.transform.position);
 			pointArray.Add (new Vector2 ((int)point.x, (int)point.y));
 		
 			lineRenderer.SetVertexCount (pointArray.Count);
@@ -578,7 +577,7 @@ public class Operations : MonoBehaviour {
 	}
 
 	public void EndPoint () {
-		if(pointArray.Count>2){
+		if(pointArray.Count > 2){
 			lineRenderer.SetVertexCount(pointArray.Count);
 			lineRenderer.SetPosition(pointArray.Count-1, cam.ScreenToWorldPoint(new Vector3(pointArray [0].x,pointArray [0].y,1.0f)));
 			CV.ResizePointArray (pointArray, thinningScale);

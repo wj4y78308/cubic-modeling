@@ -39,6 +39,8 @@ public class Menu : MonoBehaviour {
 	public Text modelName;
 
 	Operations operations;
+	CubeCreater cubeCreater;
+
 	Color pickedColor = new Color (1.0f ,0.0f ,0.0f);
 	int hueColorNum = 20;
 	int brightnessNum = 4;
@@ -55,6 +57,7 @@ public class Menu : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		operations = GetComponent<Operations> ();
+		cubeCreater = GameObject.Find ("barrel").GetComponent<CubeCreater> ();
 		SetUpColorArray ();
         
 	}
@@ -115,6 +118,8 @@ public class Menu : MonoBehaviour {
 			operButton.GetComponentInChildren<Text>().text = "Move";
 		else if(operations.opMode == 5)
 			operButton.GetComponentInChildren<Text>().text = "Paint";	
+		else if(operations.opMode == 6)
+			operButton.GetComponentInChildren<Text>().text = "Grab";	
 	}
 
 	public void ShowMainMenu (bool show) {
@@ -266,7 +271,8 @@ public class Menu : MonoBehaviour {
 		pickedColorTex.SetPixel(0, 0, pickedColor);
 		pickedColorTex.Apply();
 		operations.startCube.GetComponent<Renderer>().material.color = pickedColor;
-		operations.attachCube.GetComponent<Renderer> ().material.color = pickedColor;
+		cubeCreater.cube.GetComponent<Renderer> ().material.color = pickedColor;
+
 	}
 
 	public void SetUpColorArray (){
