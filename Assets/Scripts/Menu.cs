@@ -15,7 +15,7 @@ public class Menu : MonoBehaviour {
 	public Button yesButton;
 
 	public Button operButton;
-    private Vector3 HSV = new Vector3(0.0f,1.0f,1.0f);
+    private Vector3 HSV = new Vector3(1.0f,1.0f,1.0f);
 
     //public GameObject opPanel;
     //public GameObject leftPanel;
@@ -37,19 +37,20 @@ public class Menu : MonoBehaviour {
 	public Text inputName;
 	public GameObject deleteDialog;
 	public Text modelName;
+	public GameObject symmetryPlane;
 
 	Operations operations;
 	CubeCreater cubeCreater;
 
 	Color pickedColor = new Color (1.0f ,0.0f ,0.0f);
-	int hueColorNum = 20;
-	int brightnessNum = 4;
-	int sizeOfView = (int)Screen.height/32;
-	int borderSize = (int)Screen.height/250;
-	Rect[,] rectArray = new Rect[20, 4];
-	GUIStyle[,] styleArray = new GUIStyle[20,4];
-	Rect pickedColorRect;
-	Texture2D pickedColorTex;
+	//int hueColorNum = 20;
+	//int brightnessNum = 4;
+	//int sizeOfView = (int)Screen.height/32;
+	//int borderSize = (int)Screen.height/250;
+	//Rect[,] rectArray = new Rect[20, 4];
+	//GUIStyle[,] styleArray = new GUIStyle[20,4];
+	//Rect pickedColorRect;
+	//Texture2D pickedColorTex;
 	bool showColorRects = true;
 	int prevWidth=Screen.width, prevHeight=Screen.height;
 	int currLoadScreen;
@@ -58,21 +59,22 @@ public class Menu : MonoBehaviour {
 	void Start () {
 		operations = GetComponent<Operations> ();
 		cubeCreater = GameObject.Find ("barrel").GetComponent<CubeCreater> ();
-		SetUpColorArray ();
+		//SetUpColorArray ();
+
         
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		if (Screen.width != prevWidth || Screen.height != prevHeight) {
-			SetUpColorArray();
+			//SetUpColorArray();
 			operations.SetUpTexture();
 			prevWidth=Screen.width;
 			prevHeight=Screen.height;
 		}
 	}
 
-	void OnGUI () {
+	/*void OnGUI () {
 		if(showColorRects){
 			for(int i = 0; i < hueColorNum; ++i) {
 				for(int j = 0; j < brightnessNum; ++j) {
@@ -83,7 +85,7 @@ public class Menu : MonoBehaviour {
 				GUI.DrawTexture(pickedColorRect, pickedColorTex);
 			}
 		}
-	}
+	}*/
 	/*public void HidePanel(GameObject m){
 		m.gameObject.SetActive (false);
 	}
@@ -109,7 +111,7 @@ public class Menu : MonoBehaviour {
 		if (operations.opMode == 0)
 			operButton.GetComponentInChildren<Text>().text = "Draw Simple";
 		else if(operations.opMode == 1)
-			operButton.GetComponentInChildren<Text>().text = "Draw Symmetry";
+			operButton.GetComponentInChildren<Text>().text = "Symmetry";
 		else if(operations.opMode == 2)
 			operButton.GetComponentInChildren<Text>().text = "Attach";
 		else if(operations.opMode == 3)
@@ -117,9 +119,15 @@ public class Menu : MonoBehaviour {
 		else if(operations.opMode == 4)
 			operButton.GetComponentInChildren<Text>().text = "Move";
 		else if(operations.opMode == 5)
-			operButton.GetComponentInChildren<Text>().text = "Paint";	
-		else if(operations.opMode == 6)
-			operButton.GetComponentInChildren<Text>().text = "Grab";	
+			operButton.GetComponentInChildren<Text>().text = "Paint";
+	
+		if (mode == 1)
+			symmetryPlane.SetActive (true);
+		else symmetryPlane.SetActive (false);
+
+		if (mode == 4) 
+			operations.CleanSelectedMesh ();
+
 	}
 
 	public void ShowMainMenu (bool show) {
@@ -268,13 +276,13 @@ public class Menu : MonoBehaviour {
 	public void ChangeColor (Color color){
 		pickedColor = color;
 		//pickedColorImage.color = pickedColor;
-		pickedColorTex.SetPixel(0, 0, pickedColor);
-		pickedColorTex.Apply();
+	//	pickedColorTex.SetPixel(0, 0, pickedColor);
+	//	pickedColorTex.Apply();
 		operations.startCube.GetComponent<Renderer>().material.color = pickedColor;
 		cubeCreater.cube.GetComponent<Renderer> ().material.color = pickedColor;
-
+	//operations.outlineMat.SetColor ("_Color",pickedColor);
 	}
-
+/*
 	public void SetUpColorArray (){
 		Color color = new Color();
 		for(int i = 0; i < hueColorNum; ++i) {
@@ -308,14 +316,13 @@ public class Menu : MonoBehaviour {
 				styleArray[i,j].normal.background = texture;
 			}
 		}
-		//pickedColorRect = new Rect(0.5f*(Screen.width - hueColorNum * sizeOfView - (hueColorNum - 1) * borderSize) + hueColorNum * sizeOfView + (hueColorNum-1) * borderSize,
-		  //                   Screen.height - sizeOfView * 2, sizeOfView * 2, sizeOfView * 2);
+
 		RectTransform rectButton = operButton.GetComponent<RectTransform> (); 
-		pickedColorRect = new Rect(operButton.transform.position.x /*- rectButton.rect.width/2*/ +sizeOfView * 2 ,Screen.height - operButton.transform.position.y + rectButton.rect.height, sizeOfView * 2, sizeOfView * 2);
+		pickedColorRect = new Rect(operButton.transform.position.x +sizeOfView * 2 ,Screen.height - operButton.transform.position.y + rectButton.rect.height, sizeOfView * 2, sizeOfView * 2);
 		pickedColorTex = new Texture2D(1, 1);
 		ChangeColor (Color.red);
 	}
-
+*/
     public Vector3 getHSV()
     {
         return HSV;

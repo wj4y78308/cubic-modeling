@@ -10,6 +10,7 @@ using Leap;
 using Hover.Cast.Items;
 using Hover.Cast;
 using Hover.Demo.CastCubes.Items;
+using UnityEngine.VR;
 
 public class Operations : MonoBehaviour {
 
@@ -28,11 +29,10 @@ public class Operations : MonoBehaviour {
 
 	public GameObject attach;
     public GameObject mainCast , loadCast;
+	public GameObject colorPlane;
 	//public GameObject attachCube;
 
-	float GrabStrength = 0.0f;
 	Vector handSpeed;
-	Vector swipeDirection;
 	Vector screenTapDirection;
     bool isTouchedScreen = false;
     float isMoveScreen = 1.5f , isSetThickness = 1.5f ;
@@ -44,9 +44,13 @@ public class Operations : MonoBehaviour {
     GameObject thumb3;
     public GameObject handController;
 
+	private static int CamPos = 1;
+	public GameObject OVRRoot;
+	public GameObject CubeRoot;
     public int opMode = 0;
 	public UnityEngine.UI.Image paper;
 	public Camera cam;
+	public GameObject OVRCam;
 	public GameObject cubeObject;
 	public List<GameObject> cubeObjects = new List<GameObject> ();
 	public GameObject startCube;
@@ -56,7 +60,10 @@ public class Operations : MonoBehaviour {
 	public List<SaveData> saveList;
 	public bool isLoading;
 	Menu menu;
-	CubeCreater cubeCreater;
+	public Material outlineMat;
+	public Material cubeMat;
+	private Color selectedMeshColor;
+	public int symmetryDir;
 
 	float thinningScale = 0.1f;
 	float thinningProgressRatio = 1.7f;
@@ -65,26 +72,29 @@ public class Operations : MonoBehaviour {
 	List<Vector2> pointArray = new List<Vector2>();
 	
 	public static CubeMesh[] cubeArray,cubeArraySym;
-	CubeMesh selectedMesh;
+	CubeMesh selectedMesh = null;
 
-	Vector2 prev = new Vector2();
+//	Vector2 prev = new Vector2();
 	bool clickedMenu;
 	List<Vector3> newlyAttached = new List<Vector3>();
 
 	List<List<MeshData>> undoStack = new List<List<MeshData>> ();
 	List<List<MeshData>> redoStack = new List<List<MeshData>> ();
+	List<Vector3> undoStackCam = new List<Vector3> ();
+	List<Vector3> redoStackCam = new List<Vector3> ();
 	bool pushed;
+	Vector3 last = new Vector3(0,0,0);
 
-
+	RaycastHit Hit = new RaycastHit();
 
 
 	// Use this for initialization
 	void Start () {
 		menu = GetComponent<Menu> ();
-		cubeCreater = GameObject.Find("barrel").GetComponent<CubeCreater> ();
+
 		lineRenderer = GetComponent<LineRenderer> ();
 		menuState = GameObject.Find("Cast").GetComponent<HovercastSetup> ();
-        
+
         SetUpTexture ();
 		Load ();
         
@@ -98,13 +108,14 @@ public class Operations : MonoBehaviour {
 		controller.Config.SetFloat("Gesture.Swipe.MinVelocity", 650.0f);
 		controller.Config.SetFloat("Gesture.Swipe.HistorySeconds", 10.0f);
 		controller.Config.Save();
-        
+		cubeMat.color = Color.white;
+		outlineMat.color = Color.white;
     }
 	
 	// Update is called once per frame
 	void Update () {
-
-        
+		
+        /*
 		int touchCount = Input.touchCount;
 		if(touchCount <= 1){
 
@@ -252,7 +263,8 @@ public class Operations : MonoBehaviour {
 					if(prev!=curr){
 						if(prev != Vector2.zero){
 							float dist = Vector3.Distance(cam.transform.position, Vector3.zero);
-							float angle = Vector3.Angle(cam.ScreenToWorldPoint(new Vector3(curr.x, curr.y,dist))-cam.transform.position, cam.ScreenToWorldPoint(new Vector3(prev.x,prev.y,dist))-cam.transform.position)*3;								Vector3 axis = Vector3.Cross(cam.transform.forward,(cam.ScreenToWorldPoint(new Vector3(curr.x, curr.y,cam.nearClipPlane)) - cam.ScreenToWorldPoint(new Vector3(prev.x,prev.y,cam.nearClipPlane))).normalized);
+							float angle = Vector3.Angle(cam.ScreenToWorldPoint(new Vector3(curr.x, curr.y,dist))-cam.transform.position, cam.ScreenToWorldPoint(new Vector3(prev.x,prev.y,dist))-cam.transform.position)*3;							
+							Vector3 axis = Vector3.Cross(cam.transform.forward,(cam.ScreenToWorldPoint(new Vector3(curr.x, curr.y,cam.nearClipPlane)) - cam.ScreenToWorldPoint(new Vector3(prev.x,prev.y,cam.nearClipPlane))).normalized);
 							cam.transform.RotateAround(Vector3.zero,axis,angle);
 						}
 						prev = curr;
@@ -270,9 +282,9 @@ public class Operations : MonoBehaviour {
 				}
 			}
 		}
-	
+	*/
         ////////////////////////////////////////////////////////////////////////////
-
+		OVRCam = GameObject.Find("OVRCameraRig/TrackingSpace/CenterEyeAnchor");
 		frame = controller.Frame();
 		handsInFrame = frame.Hands;
 		pointable = frame.Pointables.Frontmost;
@@ -280,147 +292,201 @@ public class Operations : MonoBehaviour {
 		hand = pointable.Hand;
 
 		Index = GameObject.Find("CleanRobotFullRightHand(Clone)/index/bone3");
-
+	
         if (menu.operButton.gameObject.activeSelf)
         {
             mainCast.SetActive(true);
             loadCast.SetActive(false);
            
 
-            if (menuState.State == null) print("null");
-            else{
+			if (menuState.State == null)
+				print ("null");
+			else {
                
-                menuActive = GameObject.Find("Main Camera/Cast/Menu/Arc/CurrLevel");
+				menuActive = GameObject.Find ("OVRCameraRig/TrackingSpace/CenterEyeAnchor/Cast/Menu/Arc/CurrLevel");
 
-                if (!menuActive.activeSelf)
-                {                
+				if (menuActive != null && !menuActive.activeSelf) {                
+					//Quaternion angles = InputTracking.GetLocalRotation (VRNode.CenterEye);
 
-                    if (hand.IsValid)
-                    {
-                        //if(frame != null){
+					/*GameObject[] cu = GameObject.FindGameObjectsWithTag ("CubeObject");
+					if (cu != null) {
+						for(int i = 0 ; i < cu.Length; i++){
+							cu[i].transform.Rotate (-(OVRCam.transform.localRotation.eulerAngles - last.eulerAngles));
 
-                        for (int g = 0; g < frame.Gestures().Count; g++)
-                        {
-                            if (frame.Gestures()[g].Type == Gesture.GestureType.TYPE_SWIPE)
-                            {
-                                swipeGesture = new SwipeGesture(frame.Gestures()[g]);
-                                swipeDirection = swipeGesture.Direction;
-                                int dir = Swipe();
+						}*/
+						//colorPlane.transform.Rotate (-(OVRCam.transform.localRotation.eulerAngles - last.eulerAngles));
 
-                                if (dir == 1)
-                                {
-                                    cam.transform.RotateAround(cubeObject.transform.position, cam.transform.up, 1.5f*swipeDirection.x);
-                                }
-                                else if (dir == 2)
-                                {
-                                    cam.transform.RotateAround(cubeObject.transform.position, cam.transform.up, swipeDirection.x);
-                                }
+					if(last != Vector3.zero){
 
-                                else if (dir == 3 || dir == 4)
-                                {
-                                    cam.transform.RotateAround(cubeObject.transform.position, -cam.transform.right, swipeDirection.x);
-                                }
-                            }
-                        }
 
-                        // Move cubeObject
-                        if (opMode == 4)
-                        {
-                            if (!pushed)
-                            {
-                                PushTo(undoStack);
-                                redoStack.Clear();
-                                pushed = true;
-                            }
-                            Move();
-                            UpdateGrid();
-                        }
+
+						//float dist = Vector3.Distance(OVRCam.transform.position, Vector3.zero);
+						//float angle = Vector3.Angle(cam.ScreenToWorldPoint(new Vector3(curr.x, curr.y,dist))-cam.transform.position, cam.ScreenToWorldPoint(new Vector3(prev.x,prev.y,dist))-cam.transform.position)*3;
+						//Vector3 axis = Vector3.Cross(cam.transform.forward,(cam.ScreenToWorldPoint(new Vector3(curr.x, curr.y,cam.nearClipPlane)) - cam.ScreenToWorldPoint(new Vector3(prev.x,prev.y,cam.nearClipPlane))).normalized);
+
+					//	Vector3 curr = OVRCam.transform.localRotation.eulerAngles;
+						Vector3 curr = OVRCam.transform.forward;
+						//Vector3 deltaCam = curr - last.eulerAngles;
+					//	Vector3 axis = Vector3.Cross(OVRCam.transform.forward , deltaCam.normalized).normalized;	
+						Vector3 axis = Vector3.Cross(curr.normalized,last.normalized).normalized;
+						//float angle = Vector3.Magnitude (deltaCam)*3;
+						float angle = -Vector3.Angle(curr,last);
+						//float angle = Vector3.Angle(last.eulerAngles,curr)*3;
+
+							
+							OVRRoot.transform.RotateAround (startCube.transform.position, axis, angle);
+
+						//menu.symmetryPlane.transform.Rotate (-(OVRCam.transform.localRotation.eulerAngles - last.eulerAngles) , Space.World);
+						//CubeRoot.transform.Rotate (-(OVRCam.transform.localRotation.eulerAngles - last.eulerAngles) , Space.World);
+						if (CamPos == 0) {
+							OVRRoot.transform.rotation = Quaternion.Euler(new Vector3(90,0,0));
+						} else if (CamPos == 1) {
+							OVRRoot.transform.rotation = Quaternion.Euler(new Vector3(0,180,0));
+						} else if (CamPos == 2) {
+							OVRRoot.transform.rotation = Quaternion.Euler(new Vector3(0,-90,0));
+						}
+
+					}
+					//last= OVRCam.transform.localRotation;
+						last = OVRCam.transform.forward;
+					if (hand.IsValid) {
+						//if(frame != null){
+					
+
+						/*for (int g = 0; g < frame.Gestures ().Count; g++) {
+							if (frame.Gestures () [g].Type == Gesture.GestureType.TYPE_SWIPE) {
+								swipeGesture = new SwipeGesture (frame.Gestures () [g]);
+								swipeDirection = swipeGesture.Direction;
+								int dir = Swipe ();
+
+								if (dir == 1) {
+									
+
+									//Quaternion angles = InputTracking.GetLocalRotation (VRNode.CenterEye);
+
+									//cubeObject.transform.Rotate (angles.eulerAngles.y,0,0);
+									cam.transform.RotateAround (cubeObject.transform.position, cam.transform.up, 1.5f * swipeDirection.x);
+								} else if (dir == 2) {
+									cam.transform.RotateAround (cubeObject.transform.position, cam.transform.up, swipeDirection.x);
+								} else if (dir == 3 || dir == 4) {
+									cam.transform.RotateAround (cubeObject.transform.position, -cam.transform.right, swipeDirection.x);
+								}
+							}
+						}*/
+						if (Index != null) {
+							
                         //Draw cubeObject
-                        else
-                        {
-                            currentPosition = pointable.TipPosition;
-                            //if( touchZone == Pointable.Zone.ZONE_TOUCHING && handsInFrame.Leftmost.GrabStrength == 1){
-                            //print(currentPosition);
-                            if (currentPosition.z - cam.transform.position.z <= -15)
-                            {
-                                RaycastHit hit = new RaycastHit();
-                                
-                                //if ((index = GameObject.Find("SkeletalRightRobotHand(Clone)/index/bone3")) != null)
-								if(Index != null)
-                                {
-                                    //if ((finger = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").gameObject) != null){					
-									Vector3 point = Index.transform.position;
+                       // else {
+								
+								currentPosition = pointable.TipPosition;
+								//if( touchZone == Pointable.Zone.ZONE_TOUCHING && handsInFrame.Leftmost.GrabStrength == 1){
+								//RaycastHit hit = new RaycastHit ();
+								Vector3 point = Index.transform.position;
 
-                                    //point = GameObject.Find ("SkeletalRightRobotHand(Clone)").transform.FindChild ("index").FindChild ("bone3").position;
-                                    //if(cubeArray != null)
-                                    //print (cubeArray.Length);
-
-                                    if (opMode <= 1 && cubeArray == null)
-                                    {
-
-										if( Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) &&
-											(hit.transform.name == "Background" || hit.transform.name == "CubeObject(Clone)") ){
-											//print ("hit");
-                                        	AddPointLeap();
+								if (opMode == 2 || opMode == 3 || opMode == 5)
+									setColorPlane (true);
+								else
+									setColorPlane (false);
+								if (currentPosition.z - OVRCam.transform.position.z <= -15) {
+								                                           
+									if (Index != null) {
+										if (opMode == 4) {
+											if (selectedMesh != null) {
+												Move ();
+												UpdateGrid ();
+											}
 										}
-                                        //if (menu.mainMenu.activeSelf)
-                                        //	menu.ShowMainMenu (false);
-                                    }
-                                    //else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(point.x, point.y, 0)),out hit)) {
-									else if (Physics.Raycast(point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) && hit.transform.name == "CubeObject(Clone)"){
+										if (opMode <= 1 && cubeArray == null) {
 
-                                        if (opMode == 2 || opMode == 3 || opMode == 5)
-                                        {
-                                            if (!pushed)
-                                            {
-                                                PushTo(undoStack);
-                                                redoStack.Clear();
-                                                pushed = true;
-                                            }
-                                        }
-										if (opMode == 2 && !cubeCreater.isPinch())
-                                            Attach(hit);
-                                        else if (opMode == 3)
-                                            Remove(hit);
-                                        else if (opMode == 5)
-                                            Paint(hit);
-                                    }
-                                }
-                                isTouchedScreen = true;
-                            }
+											if (Physics.Raycast (point + OVRCam.transform.forward, (point - OVRCam.transform.position).normalized, out Hit) &&
+												(Hit.transform.name == "Background" || Hit.transform.name == "CubeObject(Clone)" || Hit.transform.name == "Plane")) {
+
+												AddPointLeap ();
+											}
+											//if (menu.mainMenu.activeSelf)
+											//	menu.ShowMainMenu (false);
+										}
+                                    //else if (Physics.Raycast( cam.ScreenPointToRay(new Vector3(point.x, point.y, 0)),out hit)) {
+										else if (Physics.Raycast (point + OVRCam.transform.forward, (point - OVRCam.transform.position).normalized, out Hit) && Hit.transform.name == "CubeObject(Clone)") {
+
+										if (opMode == 2 || opMode == 3 || opMode == 5 || opMode == 4) {
+												if (!pushed) {
+													PushTo (undoStack);
+													
+													redoStack.Clear ();
+													redoStackCam.Clear ();
+													pushed = true;
+												}
+											}
+										// Move cubeObject
+										if (opMode == 4 ) {
+											
+											//if (hand.GrabStrength != 1) {
+												if (selectedMesh == null) {
+													selectedMesh = Hit.transform.GetComponent<CubeMesh> ();
+													//selectedMeshColor = selectedMesh.GetColor();;
+													//outlineMat.SetColor ("_Color",selectedMeshColor);
+													if (selectedMesh.symmetry != null)
+														selectedMesh.symmetry.gameObject.GetComponent<Renderer> ().material = outlineMat; 
+													selectedMesh.gameObject.GetComponent<Renderer> ().material = outlineMat; 
+													
+												} 
+													
+												/*if (!pushed) {
+													PushTo (undoStack);
+													redoStack.Clear ();
+													pushed = true;
+												}*/
+											//}
+
+										}
+											if (opMode == 2 /*&& !cubeCreater.isPinch ()*/)
+												Attach (Hit);
+											else if (opMode == 3)
+												Remove (Hit);
+											else if (opMode == 5)
+												Paint (Hit);
+										}
+									}
+									isTouchedScreen = true;
+								}
 
                             //else if( touchZone == Pointable.Zone.ZONE_HOVERING && isTouchedScreen == true && handsInFrame.Leftmost.GrabStrength <= 0.5){ // touching to hovering
-                            else if (currentPosition.z - cam.transform.position.z > -15 && isTouchedScreen == true)
-                            { // touching to hovering
-                                isTouchedScreen = false;
+								else if (currentPosition.z - OVRCam.transform.position.z > -15 && isTouchedScreen == true) { // touching to hovering
+									isTouchedScreen = false;
 
+									if (clickedMenu) {
+										clickedMenu = false;
+										return;
+									}
+									pushed = false;
+									if (isLoading)
+										return;
+								if (opMode < 2) {
+									EndPoint ();
+								} else if (opMode == 2) {
+									newlyAttached = new List<Vector3> ();
 
-                                if (clickedMenu)
-                                {
-                                    clickedMenu = false;
-                                    return;
-                                }
-                                pushed = false;
-                                if (isLoading)
-                                    return;
-                                if (opMode < 2)
-                                {
-                                    EndPoint();
-                                }
-                                else if (opMode == 2)
-                                    newlyAttached = new List<Vector3>();
-                                if (attach.GetComponent<OperationsListener>().enabled == false)
-                                    attach.GetComponent<OperationsListener>().enabled = true;
-                            }
+								}
+								else if (opMode == 4) {
+									//selectedMeshColor = selectedMesh.gameObject.GetComponent<Renderer> ().material.color;
+									//selectedMeshColor = selectedMesh.GetColor();
+									//cubeMat.SetColor ("_Color",selectedMeshColor);
 
-                            if (menu.sliderPanel.gameObject.activeSelf)
-                            {                      
-                                ThumbDown();
-                            }
-                        }
-                    }
-                }
-            }
+									CleanSelectedMesh ();
+								}
+									if (attach.GetComponent<OperationsListener> ().enabled == false)
+										attach.GetComponent<OperationsListener> ().enabled = true;
+								}
+
+								if (menu.sliderPanel.gameObject.activeSelf) {                      
+									ThumbDown ();
+								}
+							}
+					//	}
+					}
+				}
+			}
 
         }
         else //load menu
@@ -453,6 +519,55 @@ public class Operations : MonoBehaviour {
         }
            
 	}
+
+
+	public void CleanSelectedMesh(){
+		if (selectedMesh != null) {
+			//outlineMat.SetColor ("_Color", selectedMesh.gameObject.GetComponent<Renderer> ().material.color);
+			//cubeMat.color = menu.GetPickedColor ();
+			if (selectedMesh.symmetry != null)
+				selectedMesh.symmetry.gameObject.GetComponent<Renderer> ().material = cubeMat; 
+			selectedMesh.gameObject.GetComponent<Renderer> ().material = cubeMat;
+			selectedMesh = null;
+		}
+
+	}
+
+	private void setColorPlane(bool state){
+		colorPlane.SetActive (state);
+		if (state) {
+			//print (currentPosition.z - cam.transform.position.z+15);
+			if (currentPosition.z - OVRCam.transform.position.z > -15 && currentPosition.z - OVRCam.transform.position.z <= 75) {
+				float s = (float)((currentPosition.z - OVRCam.transform.position.z + 15) / 100.0f);
+				colorPlane.GetComponent<Renderer> ().material.color = CV.HSVToRGB (0.25f, 0.0f, s);
+				colorPlane.transform.localScale = new Vector3 ( 1 - s,1 - s,1 - s);
+
+			}
+			else if(currentPosition.z - OVRCam.transform.position.z < -15){
+				colorPlane.GetComponent<Renderer> ().material.color = CV.HSVToRGB (0.25f, 0.0f, 0.0f);
+				colorPlane.transform.localScale = new Vector3 ( 1.0f,1.0f,1.0f);
+			}
+			//RaycastHit hit = new RaycastHit ();
+			Vector3 point = Index.transform.position;
+	
+			//if(Physics.Raycast (point + OVRCam.transform.forward,OVRCam.transform.forward, out Hit ) && Hit.transform.name == "CubeObject(Clone)"){
+			if(Physics.Raycast (point + (point - OVRCam.transform.position).normalized, (point - OVRCam.transform.position).normalized, out Hit ) && Hit.transform.name == "CubeObject(Clone)"){
+				//Vector3 nor = Hit.point - point;
+				//Vector3 pos = Hit.point + nor.normalized - Hit.transform.position;
+				Vector3 pos = Hit.point + Hit.normal * 0.5f - Hit.transform.position  /*+ startCube.transform.position*/;
+				pos = new Vector3 (Mathf.RoundToInt (pos.x), Mathf.RoundToInt (pos.y), Mathf.RoundToInt (pos.z));
+				colorPlane.transform.position = pos;
+
+			} 
+			//else if (Physics.Raycast (point + cam.transform.forward, (point - cam.transform.position).normalized, out hit) && hit.transform.name == "Background" ) {
+			/*else if (Hit.transform.name != "CubeObject(Clone)"){
+				colorPlane.SetActive (false);
+			}*/
+
+		
+		}
+	}
+	/*
     int Swipe() {
         
                 if (!hand.IsRight)
@@ -471,19 +586,26 @@ public class Operations : MonoBehaviour {
      
         return 0;
     }
-
+*/
 	void Move(){
-		GrabStrength = hand.GrabStrength;
 		
-		if (GrabStrength == 1 && hand.IsRight) {
+		
+			if (/*hand.GrabStrength == 1 &&*/hand.IsRight) {
 			handSpeed = hand.PalmVelocity;
             //cam.transform.Translate (-handSpeed.x / 10000.0f, -handSpeed.y / 10000.0f, handSpeed.z / 10000.0f);
-            //handController.transform.Translate(-handSpeed.x / 10000.0f, -handSpeed.y / 10000.0f, handSpeed.z / 10000.0f);
-          
-            foreach (GameObject co in cubeObjects)
-            {
-                co.transform.Translate(-handSpeed.x / 1000.0f, -handSpeed.y / 1000.0f, handSpeed.z / 1000.0f);
-            }
+            
+            //foreach (GameObject co in cubeObjects)
+			// {
+			if(selectedMesh.symmetry != null){
+				if(selectedMesh.symmetryDir == 1)
+					selectedMesh.symmetry.transform.Translate(-handSpeed.x / 900.0f, handSpeed.y / 900.0f, handSpeed.z / 900.0f,OVRCam.transform);
+				else if(selectedMesh.symmetryDir == 2)
+					selectedMesh.symmetry.transform.Translate(handSpeed.x / 900.0f, -handSpeed.y / 900.0f, handSpeed.z / 900.0f,OVRCam.transform);
+				else if(selectedMesh.symmetryDir == 3)
+					selectedMesh.symmetry.transform.Translate(handSpeed.x / 900.0f, handSpeed.y / 900.0f, handSpeed.z / 900.0f,OVRCam.transform);
+			}
+			selectedMesh.transform.Translate(handSpeed.x / 900.0f, handSpeed.y / 900.0f, -handSpeed.z / 900.0f,OVRCam.transform);
+           // }
                 
         }
 	}
@@ -593,7 +715,7 @@ public class Operations : MonoBehaviour {
 	public void Clean () {
 		PushTo (undoStack);
 		redoStack.Clear ();
-
+		redoStackCam.Clear ();
 		if (cubeArray != null) {
 			foreach (CubeMesh ca in cubeArray) Destroy (ca.gameObject);
 			cubeArray = null;
@@ -642,17 +764,18 @@ public class Operations : MonoBehaviour {
 
 	public void SetCamPos (int num) {
 		if (num == 0) {
-			cam.transform.position = new Vector3(0,25,0);
-			cam.transform.rotation = Quaternion.Euler(new Vector3(90,0,0));
+			OVRRoot.transform.position = new Vector3(0,25,-4.1f);
+			OVRRoot.transform.rotation = Quaternion.Euler(new Vector3(90,0,0));
 		}
 		else if (num == 1) {
-			cam.transform.position = new Vector3(0,0,25);
-			cam.transform.rotation = Quaternion.Euler(new Vector3(0,180,0));
+			OVRRoot.transform.position = new Vector3(0,-4.1f,25);
+			OVRRoot.transform.rotation = Quaternion.Euler(new Vector3(0,180,0));
 		}
 		else if (num == 2) {
-			cam.transform.position = new Vector3(25,0,0);
-			cam.transform.rotation = Quaternion.Euler(new Vector3(0,-90,0));
+			OVRRoot.transform.position = new Vector3(25,-4.1f,0);
+			OVRRoot.transform.rotation = Quaternion.Euler(new Vector3(0,-90,0));
 		}
+		CamPos = num;
 	}
 
 	public void SetUpTexture () {
@@ -749,15 +872,21 @@ public class Operations : MonoBehaviour {
 		}
 		foreach (GameObject co in cubeObjects) Destroy(co);
 		cubeObjects.Clear ();
-		
+		//OVRCam.transform.rotation= Quaternion.Euler(new Vector3(0,0,0));
 		List<MeshData> meshList = undoStack [undoStack.Count - 1];
+		//Vector3 camList = undoStackCam [undoStackCam.Count - 1];
 		undoStack.RemoveAt (undoStack.Count - 1);
+		//undoStackCam.RemoveAt (undoStackCam.Count - 1);
+		//OVRCam.transform.Rotate(camList-OVRCam.transform.rotation.eulerAngles);
 		List<CubeMesh> cubeMeshes = new List<CubeMesh> ();
 		foreach (MeshData meshData in meshList) {
-			CubeMesh cm = ((GameObject)Instantiate(cubeObject, meshData.position.ToVector3(), Quaternion.identity)).GetComponent<CubeMesh> ();
+			GameObject cu = Instantiate (cubeObject, meshData.position.ToVector3 (), Quaternion.identity) as GameObject;
+			//cu.transform.parent = CubeRoot.transform;
+			CubeMesh cm = cu.GetComponent<CubeMesh> ();
 			cm.LoadFromMeshData (meshData);
 			cubeMeshes.Add (cm);
 			cubeObjects.Add (cm.gameObject);
+
 		}
 		for (int i=0; i<meshList.Count; i++) {
 			if (meshList[i].symmetry>=0) cubeMeshes[i].symmetry = cubeMeshes[meshList[i].symmetry];
@@ -775,12 +904,18 @@ public class Operations : MonoBehaviour {
 
 		foreach (GameObject co in cubeObjects) Destroy(co);
 		cubeObjects.Clear ();
-		
+		//OVRCam.transform.rotation= Quaternion.Euler(new Vector3(0,0,0));
 		List<MeshData> meshList = redoStack [redoStack.Count - 1];
+		//Vector3 camList = redoStackCam [redoStackCam.Count - 1];
 		redoStack.RemoveAt (redoStack.Count - 1);
+		//redoStackCam.RemoveAt (redoStackCam.Count - 1);
+		//OVRCam.transform.Rotate(camList-OVRCam.transform.rotation.eulerAngles);
 		List<CubeMesh> cubeMeshes = new List<CubeMesh> ();
 		foreach (MeshData meshData in meshList) {
-			CubeMesh cm = ((GameObject)Instantiate(cubeObject, meshData.position.ToVector3(), Quaternion.identity)).GetComponent<CubeMesh> ();
+			//CubeMesh cm = ((GameObject)Instantiate(cubeObject, meshData.position.ToVector3(), Quaternion.identity)).GetComponent<CubeMesh> ();
+			GameObject cu = (GameObject)Instantiate (cubeObject, meshData.position.ToVector3 (), Quaternion.identity);
+			cu.transform.parent = CubeRoot.transform;
+			CubeMesh cm = cu.GetComponent<CubeMesh> ();
 			cm.LoadFromMeshData (meshData);
 			cubeMeshes.Add (cm);
 			cubeObjects.Add (cm.gameObject);
@@ -828,12 +963,15 @@ public class Operations : MonoBehaviour {
 
 	void PushTo (List<List<MeshData>> stack) {
 		List<MeshData> temp = new List<MeshData> ();
+		Vector3 tempCam = new Vector3 (); 
 		foreach (GameObject co in cubeObjects) {
 			temp.Add (new MeshData(co.GetComponent<CubeMesh> ()));
+			tempCam=OVRCam.transform.rotation.eulerAngles;
 		}
 		if (cubeArray != null) temp.Add (new MeshData(cubeArray[(int)menu.slider.value - 1]));
 		if (cubeArraySym != null) temp.Add (new MeshData(cubeArraySym[(int)menu.slider.value - 1]));
 		stack.Add (temp);
+		undoStackCam.Add (tempCam);
 		if (stack.Count > 30) {
 			stack.RemoveRange (0,10);
 			Resources.UnloadUnusedAssets ();
@@ -841,10 +979,19 @@ public class Operations : MonoBehaviour {
 	}
 
 	public void Attach (RaycastHit hit) {
-
 		Vector3 pos = hit.point + hit.normal * 0.5f - hit.transform.position;
 		pos = new Vector3 (Mathf.RoundToInt (pos.x), Mathf.RoundToInt (pos.y), Mathf.RoundToInt (pos.z));
-		foreach (Vector3 na in newlyAttached) if(pos-hit.normal == na) return;
+
+		//print ("pos: "+pos);
+		//print ("pos- hit.normal: "+ (pos- hit.normal));
+		foreach (Vector3 na in newlyAttached) {
+			//print (na);
+			if (pos - hit.normal == na) {
+				
+
+				return;
+			}
+		}
 
 		CubeMesh cubeMesh = hit.transform.GetComponent<CubeMesh> ();
 		Vector3 minPos = cubeMesh.minPos, maxPos = cubeMesh.maxPos;
@@ -858,6 +1005,7 @@ public class Operations : MonoBehaviour {
 		newlyAttached.Add (pos);
 
 		if (minPos != cubeMesh.minPos || maxPos != cubeMesh.maxPos) UpdateGrid ();
+		setColorPlane (false);
 	}
 
 	public void Remove (RaycastHit hit) {
@@ -884,6 +1032,7 @@ public class Operations : MonoBehaviour {
 			cubeObjects.Remove(cubeMesh.gameObject);
 			if(cubeObjects.Count==0) Clean();
 		}
+		setColorPlane (false);
 	}
 
 	public void Paint (RaycastHit hit) {
@@ -891,11 +1040,13 @@ public class Operations : MonoBehaviour {
 		pos = new Vector3 (Mathf.RoundToInt (pos.x), Mathf.RoundToInt (pos.y), Mathf.RoundToInt (pos.z));
 		CubeMesh cubeMesh = hit.transform.GetComponent<CubeMesh> ();
 		cubeMesh.SetColor(pos,hit.normal,menu.GetPickedColor());
+	
 		cubeMesh.UpdateMesh ();
 		if (cubeMesh.symmetry != null) {
 			cubeMesh.symmetry.SetColor(SymmetricVector (pos),SymmetricVector (hit.normal),menu.GetPickedColor());
 			cubeMesh.symmetry.UpdateMesh();
 		}
+		setColorPlane (false);
 	}
 
 	void ClearTex (){
@@ -912,7 +1063,9 @@ public class Operations : MonoBehaviour {
 
 		for (int i=0; i<6; i++){
 			c.transform.GetChild(i).GetComponent<Renderer>().material.color = pickedColor;
+			//print(c.transform.GetChild(i).GetComponent<Renderer>().material.color);
 		}
+
 
 	}
 
@@ -924,7 +1077,16 @@ public class Operations : MonoBehaviour {
 	}
 
 	Vector3 SymmetricVector (Vector3 pos) {
-		return new Vector3 (pos.x, pos.y, pos.z==0? pos.z:-pos.z);
+		if (symmetryDir == 1) { 
+			return new Vector3 (startCube.transform.position.z * 2 - pos.x, pos.y, pos.z);
+		} else if (symmetryDir == 2) {
+			return new Vector3 (pos.x, startCube.transform.position.z * 2 - pos.y, pos.z);
+		} else if (symmetryDir == 3) {
+			return new Vector3 (pos.x, pos.y, startCube.transform.position.z * 2 - pos.z);
+		}
+		return new Vector3(0,0,0);
+		//return new Vector3 (pos.x, pos.y, pos.z==0? pos.z:-pos.z);
+
 	}
 
 	void AddThinningProcessCubeArray () {
@@ -978,7 +1140,12 @@ public class Operations : MonoBehaviour {
 					cubeArraySym[i] = Instantiate(cubeObject).GetComponent<CubeMesh>();
 					cubeArray[i].symmetry = cubeArraySym[i];
 					cubeArraySym[i].symmetry = cubeArray[i];
+					cubeArray [i].symmetryDir = symmetryDir;
+					cubeArraySym [i].symmetryDir = symmetryDir;
+					//cubeArraySym[i].transform.parent = CubeRoot.transform;
 				}
+
+				//cubeArray[i].transform.parent = CubeRoot.transform;
 			}
 			
 			for(int num = 0; num < maxDepth; num++) {
@@ -993,7 +1160,14 @@ public class Operations : MonoBehaviour {
 
 				foreach ( Vector3 pos in cubePos ){
 					cubeArray[num].AddCube(pos,pickedColor);
-					if(isSymmetric) cubeArraySym[num].AddCube(new Vector3(pos.x,pos.y,-pos.z),pickedColor);
+
+					if (isSymmetric) {
+						//Vector3 symPos = 2 * startCube.transform.position - pos;
+						//cubeArraySym [num].AddCube (symPos, pickedColor);
+						if(symmetryDir == 1) cubeArraySym [num].AddCube (new Vector3 (startCube.transform.position.z*2-pos.x, pos.y, pos.z), pickedColor);
+						else if(symmetryDir == 2)cubeArraySym [num].AddCube (new Vector3 (pos.x, startCube.transform.position.z*2-pos.y, pos.z), pickedColor);
+						else if(symmetryDir == 3)cubeArraySym [num].AddCube (new Vector3 (pos.x, pos.y, startCube.transform.position.z*2-pos.z), pickedColor);
+					}
 				}
 				cubeArray[num].UpdateMesh();
 				if(isSymmetric) cubeArraySym[num].UpdateMesh();

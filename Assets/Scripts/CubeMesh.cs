@@ -5,11 +5,13 @@ using System.Collections.Generic;
 public class CubeData {
 	public Vector3 position;
 	public Color[] colors = new Color[6];
+
 }
 
 public class CubeMesh : MonoBehaviour {
 
 	public CubeMesh symmetry;
+	public int symmetryDir = 0; //0:no symmetry , 1:x , 2:y ,3:z
 	public List<CubeData> cubeList = new List<CubeData> ();
 
 	public Vector3 minPos, maxPos;
@@ -30,7 +32,7 @@ public class CubeMesh : MonoBehaviour {
 	void Update () {
 	
 	}
-
+		
 	public void AddCube (Vector3 pos, Color color) {
 		CubeData newCube = new CubeData ();
 		newCube.position = pos;
@@ -51,6 +53,10 @@ public class CubeMesh : MonoBehaviour {
 	public void SetColor (Vector3 pos, Vector3 dir, Color color) {
 		foreach (CubeData cube in cubeList) {
 			if(cube.position == pos) {
+				/*for (int i = 0; i < 6; i++) {
+					cube.colors [i] = color;
+				}
+*/
 				if (dir==Vector3.right) cube.colors[0]=color;
 				else if (dir==Vector3.left) cube.colors[1]=color;
 				else if (dir==Vector3.up) cube.colors[2]=color;
@@ -61,7 +67,9 @@ public class CubeMesh : MonoBehaviour {
 			}
 		}
 	}
-
+	public Color GetColor(){
+		return colors [0];
+	}
 	public bool HasCube (Vector3 pos) {
 		if (pos.x < minPos.x || pos.x > maxPos.x || pos.y < minPos.y || pos.y > maxPos.y || pos.z < minPos.z || pos.z > maxPos.z)
 			return false;

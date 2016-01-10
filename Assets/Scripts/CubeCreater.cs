@@ -7,12 +7,12 @@ public class CubeCreater : MonoBehaviour {
 	public GameObject cube;
 	//public GameObject cubePos;
 	public GameObject attachCube;
-	public GameObject s1;
-	public GameObject s2;
+	//public GameObject s1;
+	//public GameObject s2;
 	Hand hand ;
 	Operations operations;
 	Menu menu;
-	//static bool isHolding;
+
 
 	static RaycastHit hit= new RaycastHit();
 	const int NUM_FINGERS = 5;
@@ -21,12 +21,12 @@ public class CubeCreater : MonoBehaviour {
 	const float PINCH_DISTANCE = 35.0f;
 //	const float SPRING_CONSTANT = 30f;
 	const float THUMB_TRIGGER_DISTANCE = 0.04f;
-	//Vector3 cubePos = new Vector3(0.02f,0,1.09f);
 
 	private Vector2 pinch_position;
 	private bool isPinching;
 	private GameObject grabbed_;
-
+	private bool isAttach = false;
+	//private Vector3 lastPos = new Vector3(0,0,0);
 	// Use this for initialization
 	void Start () {
 		operations = GameObject.Find ("Scripts").GetComponent<Operations> ();
@@ -66,8 +66,9 @@ public class CubeCreater : MonoBehaviour {
 				//Vector3 pinch = transform.TransformPoint (thumb_tip);
 
 				//else attachCube.SetActive (false);
-
-				DisplayAttachCube ();
+				if (hand.PalmVelocity.x * hand.PalmVelocity.x + hand.PalmVelocity.y * hand.PalmVelocity.y + hand.PalmVelocity.z * hand.PalmVelocity.z > 700) {
+					DisplayAttachCube ();
+				}
 				pinch_position = Camera.main.WorldToScreenPoint (thumb.transform.position);
 			
 				if (trigger_pinch && !isPinching)
@@ -148,8 +149,9 @@ public class CubeCreater : MonoBehaviour {
 		//if(Physics.Raycast( Camera.main.ScreenPointToRay(new Vector3(point.x,point.y, 0)),out hit)){
 		//if (Physics.Raycast (point + Camera.main.transform.forward, (point - Camera.main.transform.position).normalized, out hit) && hit.transform.name == "CubeObject(Clone)") {
 
-		StartCoroutine( attach ());
-
+		if (isAttach) {
+			StartCoroutine (attach ());
+		}
 		cube.SetActive (true);
 		grabbedCube.SetActive (false);
 		attachCube.SetActive (false);
@@ -176,53 +178,46 @@ public class CubeCreater : MonoBehaviour {
 		}
 	}
 	public void DisplayAttachCube(){
-		//RaycastHit hit = new RaycastHit();
 		Vector3 point = grabbedCube.transform.position;
-
-		//if (Physics.Raycast (point + Camera.main.transform.forward, (point - Camera.main.transform.position).normalized, out hit) && hit.transform.name == "CubeObject(Clone)") 
-		//GameObject frontPos = GameObject.Find ("CleanRobotFullRightHand(Clone)/Sphere");
-		//Vector3 front = (frontPos.transform.position - point).normalized;
-		//Vector3 front2 = (hand.PalmPosition - hand.Arm.WristPosition).ToUnityScaled().normalized;
-		//print (front2);
-		//s1.transform.position = SkeletalHand.getWrist();
 
 		GameObject wrist = GameObject.Find ("CleanRobotFullRightHand(Clone)/wrist joint");
 		GameObject palm = GameObject.Find ("CleanRobotFullRightHand(Clone)/palm");
 
-		//s1.transform.position =hand.Arm.WristPosition.ToUnityScaled();
-		//s2.transform.position =hand.PalmPosition.ToUnityScaled();
-		Vector3 offset = new Vector3(0.003f,0.015f,0f);
-		s1.transform.position = wrist.transform.position;
-		s2.transform.position = palm.transform.position-offset;
-		Vector3 front2 = (palm.transform.position-offset - wrist.transform.position) .normalized;
+		Vector3 offset = new Vector3(0.003f , 0.018f , 0f);
+	//	s1.transform.position = wrist.transform.position;
+	//	s2.transform.position = palm.transform.position-offset;
+		Vector3 front = (palm.transform.position-offset - wrist.transform.position) .normalized;
 
-		if(Physics.Raycast(point + front2 , front2 , out hit) && hit.transform.name == "CubeObject(Clone)")
-		{
-			//print (hit.transform.name);
+		if (Physics.Raycast (point + front, front, out hit) && hit.transform.name == "CubeObject(Clone)") {
 			attachCube.SetActive (true);
 			ChangeAttachCubeColor ();
-
 			Vector3 pos = hit.point + hit.normal * 0.5f - hit.transform.position;
 			pos = new Vector3 (Mathf.RoundToInt (pos.x), Mathf.RoundToInt (pos.y), Mathf.RoundToInt (pos.z));
 			attachCube.transform.position = pos;
 
-		}
+		
+			isAttach = true;
+			//print (hand.PalmVelocity);
 
+		} else {
+			isAttach = false;
+			attachCube.SetActive (false);
+		}
 
 
 	}
 	IEnumerator attach(){
 		
 
-		if(hit.transform.name == "CubeObject(Clone)"){
+		//if(hit != null && hit.transform.name == "CubeObject(Clone)"){
 			operations.Attach (hit);
 
 			//cube.SetActive (true);
 			//grabbedCube.SetActive (false);
 			//print (hit.transform.name);
 
-		} 
-			
+		//} 
+		isAttach = false;
 		yield return new WaitForSeconds (1);
 	}
 
