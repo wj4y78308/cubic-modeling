@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB9-8B4A-11D0-8D11-00A0C91BC942}") = "Hover.Cast.Input.Leap", "Hover.Cast.Input.Leap.dll", "{6B5251B5-EA32-41C3-B901-AFDCFB2F00AF}"
+	ProjectSection(MonoDevelopProperties) = preProject
+		name = Hover.Cast.Input.Leap
+		Configurations = $0
+		$0.Configuration = $1
+		$1.name = Default
+		$1.OutputPath = .\
+		$1.ctype = ProjectConfiguration
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|Any CPU = Default|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B5251B5-EA32-41C3-B901-AFDCFB2F00AF}.Default|Any CPU.ActiveCfg = Default|Any CPU
+		{6B5251B5-EA32-41C3-B901-AFDCFB2F00AF}.Default|Any CPU.Build.0 = Default|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Hover.Cast.Input.Leap.dll
+	EndGlobalSection
+EndGlobal
